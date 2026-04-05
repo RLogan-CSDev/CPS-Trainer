@@ -15,7 +15,8 @@ int main() {
 		GROWING,
 		SHRINKING,
 		ALTERNATING,
-		RANDOM
+		RANDOM,
+		GAME_OVER
 	};
 	State gameState = State::GROWING;							// Game will always start with the Menu
 
@@ -39,17 +40,30 @@ int main() {
 	if (!font.openFromFile("assets/fonts/Cavalier.ttf")) {
 		cout << "Font failed to load\n";
 	}
-	Text timer(font, "15",25);
-	Text clicksPerSecond(font, "0",25);
-	Text avgCPS(font, "AVG: ",25);
+
+	int scoreValue = 0;
+	float timerValue = 15.0f;
+	float cps = 0.0f;
+
+	Text timer(font, "Timer: 15", 25);
+	Text scoreText(font, "Score: 0", 25);
+	Text avgCPS(font, "Avg: 0", 25);
 	timer.setFillColor(Color::White);
-	clicksPerSecond.setFillColor(Color::Cyan);
+	scoreText.setFillColor(Color::Cyan);
 	avgCPS.setFillColor(Color::Yellow);
 	timer.setPosition({ gameWindow.getSize().x / 3.f, GAME_WINDOW_Y_AXIS_FROM_TOP + 50.f});
-	clicksPerSecond.setPosition({ gameWindow.getSize().x / 2.f, GAME_WINDOW_Y_AXIS_FROM_TOP / 3.f + 50.f});
+	scoreText.setPosition({ gameWindow.getSize().x / 2.f, GAME_WINDOW_Y_AXIS_FROM_TOP / 3.f + 50.f});
 	avgCPS.setPosition({ gameWindow.getSize().x / 4.f * 3.f, GAME_WINDOW_Y_AXIS_FROM_TOP + 50.f });
 
+	bool waitingForLeftClick = true;
+
+	Clock gameClock;
+	
+
 	while (gameWindow.isOpen()) {
+		Time dt = gameClock.restart();
+		float deltaTime = dt.asSeconds();
+		
 		while (optional event = gameWindow.pollEvent()) {
 			if (event->is<Event::Closed>() ||
 				(event->is<Event::KeyPressed>() &&
@@ -61,23 +75,25 @@ int main() {
 				circle.setRadius(50.f);
 				float radius = circle.getRadius();
 				circle.setOrigin({ radius,radius });
-				if (const auto* mouseEvent = event->getIf<Event::MouseButtonPressed>()) {
-					if (mouseEvent->button == Mouse::Button::Left) {
-						Vector2f worldPos = gameWindow.mapPixelToCoords(Mouse::getPosition(gameWindow));
-						if (circle.getGlobalBounds().contains(worldPos)) {
-							circle.setFillColor(Color::White);
-							scale *= 1.05f;
-							circle.setScale(scale);
-							circle.setPosition(position);
-						}
-						else {
-							circle.setFillColor(Color::Red);
+					if (const auto* mouseEvent = event->getIf<Event::MouseButtonPressed>()) {
+						if (mouseEvent->button == Mouse::Button::Left) {
+							Vector2f worldPos = gameWindow.mapPixelToCoords(Mouse::getPosition(gameWindow));
+							if (circle.getGlobalBounds().contains(worldPos)) {
+								circle.setFillColor(Color::White);
+								scale *= 1.05f;
+								circle.setScale(scale);
+								circle.setPosition(position);
+
+								scoreValue++;
+								scoreText.setString("Score: " + to_string(scoreValue));
+							}
+							else {
+								circle.setFillColor(Color::Red);
+							}
 						}
 					}
-				}
 				break;
 			}
-			
 			case State::SHRINKING: {
 				circle.setRadius(200.f);
 				float radius = circle.getRadius();
@@ -91,6 +107,9 @@ int main() {
 							circle.setScale(scale);
 							Vector2f position = circle.getPosition();
 							circle.setPosition(position);
+
+							scoreValue++;
+							scoreText.setString("Score: " + to_string(scoreValue));
 						}
 						else {
 							circle.setFillColor(Color::Red);
@@ -105,17 +124,27 @@ int main() {
 				circle.setOrigin({ radius, radius });
 				if (const auto* mouseEvent = event->getIf<Event::MouseButtonPressed>()) {
 					Vector2f worldPos = gameWindow.mapPixelToCoords(Mouse::getPosition(gameWindow));
-					if (mouseEvent->button == Mouse::Button::Left && mouseEvent->button != Mouse::Button::Right) {
+					if (waitingForLeftClick && mouseEvent->button == Mouse::Button::Left && mouseEvent->button != Mouse::Button::Right) {
 						if (circle.getGlobalBounds().contains(worldPos)) {
 							circle.setFillColor(Color::Yellow);
+
+							waitingForLeftClick = false;
+
+							scoreValue++;
+							scoreText.setString("Score: " + to_string(scoreValue));
 						}
 						else {
 							circle.setFillColor(Color::Red);
 						}
 					}
-					if (mouseEvent->button == Mouse::Button::Right && mouseEvent->button != Mouse::Button::Left) {
+					if (!waitingForLeftClick && mouseEvent->button == Mouse::Button::Right && mouseEvent->button != Mouse::Button::Left) {
 						if (circle.getGlobalBounds().contains(worldPos)) {
 							circle.setFillColor(Color::Green);
+
+							waitingForLeftClick = true;
+
+							scoreValue++;
+							scoreText.setString("Score: " + to_string(scoreValue));
 						}
 						else {
 							circle.setFillColor(Color::Red);
@@ -138,6 +167,9 @@ int main() {
 							float newYCoord = static_cast<float>(rand() % maxYCoord) + radius;
 							circle.setPosition({ newXCoord, newYCoord });
 							circle.setFillColor(Color::Blue);
+
+							scoreValue++;
+							scoreText.setString("Score: " + to_string(scoreValue));
 						}
 						else {
 							circle.setFillColor(Color::Red);
@@ -148,18 +180,27 @@ int main() {
 			}
 			}
 		}
+				
+		if ((gameState == State::GROWING || gameState == State::SHRINKING 
+			|| gameState == State::ALTERNATING || gameState == State::RANDOM) && timerValue > 0.0f) {
+			timerValue -= deltaTime;
+			timer.setString("Time: " + to_string(static_cast<int>(timerValue)));
+		}
+		else {
+			float calcCPS = static_cast<float>(scoreValue) / 15.0f;
+			avgCPS.setString("Avg: " + to_string(calcCPS).substr(0, 4));
+			
+			timerValue = 0.0f;
+			gameState = State::GAME_OVER;
+		}
 
 		gameWindow.clear();
 		gameWindow.draw(circle);
 		gameWindow.draw(timer);
-		gameWindow.draw(clicksPerSecond);
+		gameWindow.draw(scoreText);
 		gameWindow.draw(avgCPS);
 		gameWindow.display();
 	}
 
 	return 0;
-}
-
-void mainMenu() {
-
 }
