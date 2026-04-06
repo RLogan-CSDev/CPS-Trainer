@@ -19,7 +19,6 @@ private:
 
 public:
 	virtual ~GameState() {}								// Virtual destructor allows for compiler to backtrack all game modes to clean up memory
-	virtual void init(RenderWindow& window) = 0;		// Initializes each game mode with appropriate shapes
 	virtual void handleInput(RenderWindow& window);		// NOT pure virtual as some modes do not need to be overridden for input
 	virtual void update(float elapsedTime) = 0;			// Updates game logic
 	virtual void draw() = 0;							// Draws/renders objects to screen

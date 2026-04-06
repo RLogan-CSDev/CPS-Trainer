@@ -145,6 +145,7 @@
     <ClCompile Include="src\GameState.cpp" />
     <ClCompile Include="src\GrowingState.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
@@ -153,6 +154,7 @@
     <ClInclude Include="include\Engine.h" />
     <ClInclude Include="include\GameState.h" />
     <ClInclude Include="include\GrowingState.h" />
+    <ClInclude Include="include\UIManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

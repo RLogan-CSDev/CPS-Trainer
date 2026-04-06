@@ -17,11 +17,13 @@ private:
 	float m_TimerValue = 15.0f;			// Game timer
 	int m_ScoreValue = 0;				// Score
 	Vector2f m_Scale;					// Scale, used in multiple functions
+	const float m_Radius = 50.f;		// Constant for radius
+	const float m_GrowthRate = 1.05f;	// Constant for rate of growth
 
 public:
+	GrowingState(RenderWindow& window);				// Constructor that sets up the circle
 	~GrowingState() override;						// Logs change in game state
-	void init(RenderWindow& window) override;		// Initializes the circle for the game
-	void update(float elapsedTime) override;
-	void draw() override;
+	void update(float elapsedTime) override;		// Contains all logic for play
+	void draw() override;							// 
 };
 #endif
