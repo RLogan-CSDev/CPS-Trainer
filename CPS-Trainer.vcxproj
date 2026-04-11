@@ -148,13 +148,16 @@
     <ClCompile Include="src\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="README.md" />
+    <None Include="docs\README.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Engine.h" />
     <ClInclude Include="include\GameState.h" />
     <ClInclude Include="include\GrowingState.h" />
     <ClInclude Include="include\UIManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="docs\IDE_Setup.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

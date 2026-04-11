@@ -5,6 +5,14 @@
 #include <iostream>
 #include <random>
 
+/*
+* 
+* NOTE: This current version of main.cpp is a rough draft, and honestly has been a rough draft since adding classes to the project.
+* 
+* The jumbled code here should be viewed as a starting point for where the project goes.
+* 
+*/
+
 using namespace std;
 using namespace sf;
 
@@ -18,13 +26,17 @@ int main() {
 		RANDOM,
 		GAME_OVER
 	};
-	State gameState = State::GROWING;							// Game will always start with the Menu
+	State gameState = State::MENU;								// Game will always start with the Menu
 
 	VideoMode vm(Vector2u(1280, 720));							// Creates a window in a grid format of x, y pixels
 	RenderWindow gameWindow(vm, "CPS Trainer",
 		Style::Close | Style::Resize | Style::Titlebar);		// Creates the window object
 
 	const float GAME_WINDOW_Y_AXIS_FROM_TOP = gameWindow.getSize().y * -1 + gameWindow.getSize().y;
+
+	// Views
+	View menuView(FloatRect({ 0,0 }, { 1280, 720 }));
+	View gameView(FloatRect({ 0,0 }, { 1280,720 }));
 
 	srand((int)time(0));
 
@@ -41,8 +53,15 @@ int main() {
 		cout << "Font failed to load\n";
 	}
 
+	Text menuText(font, "Main Menu\nPress '1' for Growing Mode\n"
+		"Press '2' for Shrinking Mode\n"
+		"Press '3' for Alternating Mode\n"
+		"Press '4' for Random Mode", 30);
+	menuText.setPosition({ 200, 250 });
+
+
 	int scoreValue = 0;
-	float timerValue = 15.0f;
+	float timerValue = 15.15f;
 	float cps = 0.0f;
 
 	Text timer(font, "Timer: 15", 25);
@@ -70,8 +89,19 @@ int main() {
 				 event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Escape)) {
 				gameWindow.close();
 			}
+			if (gameState == State::MENU) {
+				if (event->is<Event::KeyPressed>() &&
+					event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Num1) {
+					gameState = State::GROWING;
+				}
+			}
+			
 			switch (gameState) {
+			case State::MENU: {
+				break;
+			}
 			case State::GROWING: {
+				//gameWindow.setView(gameView);
 				circle.setRadius(50.f);
 				float radius = circle.getRadius();
 				circle.setOrigin({ radius,radius });
@@ -190,15 +220,23 @@ int main() {
 			float calcCPS = static_cast<float>(scoreValue) / 15.0f;
 			avgCPS.setString("Avg: " + to_string(calcCPS).substr(0, 4));
 			
-			timerValue = 0.0f;
-			gameState = State::GAME_OVER;
+			timerValue = 15.1f;
+			gameState = State::MENU;
+			gameClock.restart();
 		}
 
 		gameWindow.clear();
-		gameWindow.draw(circle);
-		gameWindow.draw(timer);
-		gameWindow.draw(scoreText);
-		gameWindow.draw(avgCPS);
+		if (gameState == State::MENU) {
+			gameWindow.setView(menuView);
+			gameWindow.draw(menuText);
+		}
+		else {
+			gameWindow.draw(circle);
+			gameWindow.draw(timer);
+			gameWindow.draw(scoreText);
+			gameWindow.draw(avgCPS);
+		}
+		
 		gameWindow.display();
 	}
 

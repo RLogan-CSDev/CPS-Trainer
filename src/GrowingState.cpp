@@ -33,3 +33,7 @@ GrowingState::GrowingState(RenderWindow& window) {
 GrowingState::~GrowingState() {
 	std::cout << "[DEBUG] GrowingState cleaned up successfully.\n";
 }
+
+GrowingState::GrowingState() {
+
+}

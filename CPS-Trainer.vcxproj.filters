@@ -32,7 +32,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="README.md" />
+    <None Include="docs\README.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\GameState.h">
@@ -47,5 +47,8 @@
     <ClInclude Include="include\UIManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="docs\IDE_Setup.txt" />
   </ItemGroup>
 </Project>

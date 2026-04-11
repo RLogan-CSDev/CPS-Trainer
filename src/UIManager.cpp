@@ -2,7 +2,7 @@
 
 UIManager::UIManager(Font& font, RenderWindow& window) {
 	Vector2u windowSize = window.getSize();
-	m_HUD.setSize({ windowSize.x, windowSize.y });
+	//m_HUD.setSize({ windowSize.x, windowSize.y });
 	m_HUD.setCenter({ windowSize.x / 2.f, windowSize.y / 2.f });
 	m_HUD.setViewport(FloatRect({ 0.f,0.f }, { 1.f,1.f }));
 
