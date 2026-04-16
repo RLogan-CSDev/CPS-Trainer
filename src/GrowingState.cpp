@@ -22,6 +22,10 @@ GrowingState::GrowingState(RenderWindow& window) {
 	center.x = window.getSize().x / 2.0f;
 	center.y = window.getSize().y / 2.0f;
 
+	m_Radius = 50.f;
+	m_GrowthRate = 1.05f;
+	m_TimerValue = 15.0f;
+
 	m_Circle.setFillColor(Color::White);
 	m_Circle.setPosition({ center.x, center.y });
 	m_Circle.setRadius(m_Radius);
@@ -32,8 +36,4 @@ GrowingState::GrowingState(RenderWindow& window) {
 
 GrowingState::~GrowingState() {
 	std::cout << "[DEBUG] GrowingState cleaned up successfully.\n";
-}
-
-GrowingState::GrowingState() {
-
 }

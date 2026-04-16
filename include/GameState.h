@@ -17,10 +17,21 @@ class GameState {
 private:
 	// No private variables or functions for this base class
 
+protected:
+	// Variables are protected so that child classes can use them, primarily
+	// the resetCircle function.
+	CircleShape m_Circle;				// Game object
+	float m_TimerValue;					// Game timer
+	int m_ScoreValue;					// Score
+	Vector2f m_Scale;					// Scale, used in multiple functions
+	float m_Radius;						// Radius of circle
+	float m_GrowthRate;					// Constant for rate of growth
+
 public:
 	virtual ~GameState() {}								// Virtual destructor allows for compiler to backtrack all game modes to clean up memory
 	virtual void handleInput(RenderWindow& window);		// NOT pure virtual as some modes do not need to be overridden for input
 	virtual void update(float elapsedTime) = 0;			// Updates game logic
 	virtual void draw() = 0;							// Draws/renders objects to screen
+	void resetCircle();									// Resets the circle at end of game
 };
 #endif

@@ -18,3 +18,7 @@ void GameState::handleInput(RenderWindow& window) {
 		}
 	}
 }
+
+void GameState::resetCircle() {
+	// May not need this function after all.
+}
