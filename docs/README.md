@@ -8,6 +8,12 @@ There are a few goals that this project covers:
 1. Availability in the **CIA Triad** via 3-2-1 security strategy (*see note below*)
 1. Scalable architecture through modular game design patterns and polymorphic behavior
 
+## UPDATE
+Project commits will now be labeled in appropriate phases.
+* Phase 1 - Centralized code within main in one file.
+* Phase 2 - Most of code encapsulated within functions, still all code within one file.
+* Phase 3 - Move some code to class structures
+
 ### Security Strategy
 * **3 Copies** - GitHub, Local Drive, External Flash Drive
 * **2 Media Types** - Cloud, Physical/Solid State Drive
