@@ -23,7 +23,7 @@ private:
 	*/
 
 public:
-	
+	GrowingState();
 	GrowingState(RenderWindow& window);				// Constructor that sets up the circle
 	~GrowingState() override;						// Logs change in game state
 	void update(float elapsedTime) override;		// Contains all logic for play

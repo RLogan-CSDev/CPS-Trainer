@@ -15,7 +15,7 @@
 
 using namespace std;
 using namespace sf;
-
+/*
 int main() {
 
 	enum class State {
@@ -242,3 +242,4 @@ int main() {
 
 	return 0;
 }
+*/

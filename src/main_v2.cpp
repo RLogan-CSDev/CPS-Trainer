@@ -3,12 +3,13 @@
 #include <SFML/Window.hpp>
 #include <iostream>
 #include <random>
+#include <string>
 
 using namespace std;
 using namespace sf;
 
 /*
-* THIS IS THE VERSION 2 OF THE CPS TRAINER
+* THIS IS THE VERSION 2 (Phase 1) OF THE CPS TRAINER
 * 
 * The purpose of this version is to better organize the working state of
 * the game into...
@@ -22,14 +23,14 @@ int main() {
 	VideoMode pixelGraph(Vector2u(1280, 720));
 	RenderWindow gameWindow(pixelGraph, "CPS Trainer",
 		Style::Close | Style::Resize | Style::Titlebar);
+	float windowSizeX = gameWindow.getSize().x;				// Variable for using horizontal window size
+	float windowSizeY = gameWindow.getSize().y;				// Variable for using vertical window size
 
 	// 2. Create the core game object, a circle!
 	CircleShape gameCircle;
 	gameCircle.setFillColor(Color::White);					// White = default
-	float radius = gameCircle.getRadius();					// Obtain radius from object made
-	gameCircle.setOrigin({ radius, radius });				// Setting origin helps set position
-	gameCircle.setPosition({ gameWindow.getSize().x / 2.f,	
-		gameWindow.getSize().y / 2.f });					// Sets circle position in center of screen
+	gameCircle.setPosition({ windowSizeX / 2.f,	
+		windowSizeY / 2.f });								// Sets circle position in center of screen
 
 	// 3. Load the font.
 	Font mainFont;
@@ -46,8 +47,8 @@ int main() {
 		titleBounds.position.x + titleBounds.size.x / 2.f,	// Top left + top right distance / 2 = half
 		titleBounds.position.y + titleBounds.size.y / 2.f	// Top left + bottom left distance / 2 = half
 		});													// Origin is set to the center
-	titleText.setPosition({ gameWindow.getSize().x / 2.f,
-		gameWindow.getSize().y / 3.f });					// Places title in horizontal middle, 1/3rd from top
+	titleText.setPosition({ windowSizeX / 2.f,
+		windowSizeY / 3.f });								// Places title in horizontal middle, 1/3rd from top
 	// 2 - Options Text
 	Text optionsText(mainFont, "Press '1' for Growing Mode\n\n"
 		"Press '2' for Shrinking Mode\n\n"
@@ -67,8 +68,8 @@ int main() {
 		timerBounds.position.x + timerBounds.size.x / 2.f,
 		timerBounds.position.y + timerBounds.size.y / 2.f
 		});
-	timerText.setPosition({ gameWindow.getSize().x / 3.f,
-		gameWindow.getSize().y / 10.f });					// Places timer 1/3rd horizontal distance from left, 1/10th from top
+	timerText.setPosition({ windowSizeX / 3.f,
+		windowSizeY / 10.f });								// Places timer 1/3rd horizontal distance from left, 1/10th from top
 	// 4 - CPS Text
 	Text cpsText(mainFont, "CPS: ", 25);
 	FloatRect cpsBounds = cpsText.getLocalBounds();
@@ -76,17 +77,17 @@ int main() {
 		cpsBounds.position.x + cpsBounds.size.x / 2.f,
 		cpsBounds.position.y + cpsBounds.size.y / 2.f
 		});
-	cpsText.setPosition({ gameWindow.getSize().x / 3.f * 2.f,
-		gameWindow.getSize().y / 10.f });					// Places CPS 2/3rds horizontally distance from left, 1/10th from top
+	cpsText.setPosition({ windowSizeX / 3.f * 2.f,
+		windowSizeY / 10.f });								// Places CPS 2/3rds horizontally distance from left, 1/10th from top
 	// 5 - Average Calculation Text
-	Text calcCPSText(mainFont, "Average: ", 35);
+	Text calcCPSText(mainFont, "Average: ", 75);
 	FloatRect calcCPSBounds = calcCPSText.getLocalBounds();
 	calcCPSText.setOrigin({
 		calcCPSBounds.position.x + calcCPSBounds.size.x / 2.f,
 		calcCPSBounds.position.y + calcCPSBounds.size.y / 2.f
 		});
-	calcCPSText.setPosition({ gameWindow.getSize().x / 2.f,
-		gameWindow.getSize().y / 2.f });					// Places average calculation in exact center of screen
+	calcCPSText.setPosition({ windowSizeX / 2.f,
+		windowSizeY / 2.f });								// Places average calculation in exact center of screen
 	calcCPSText.setFillColor(Color::Black);					// Sets color of this text to black
 	calcCPSText.setOutlineColor(Color::White);				// Sets outline color
 	calcCPSText.setOutlineThickness(5.f);					// Sets thickness of outline to 5 pixels thick
@@ -102,42 +103,173 @@ int main() {
 	};
 	State gameState = State::MENU;							// Game will start in MENU state
 
-	// 6. Other variables needed
-	int cpsValue = 0;
+	// 6. Create View objects
+	View menuView(FloatRect({ 0,0 }, 
+		{ windowSizeX, windowSizeY }));						// Menu View shows only the menu to screen
+	View gameView(FloatRect({ 0,0 },
+		{ windowSizeX, windowSizeY }));						// Game View shows only the gameplay to screen
+	View endView(FloatRect({ 0,0 },
+		{ windowSizeX, windowSizeY }));						// End View shows only the end of game stats screen
+
+	// 7. Other variables needed
+	int cpsValue = 0;										// Collecting click count
+	float timerValue = 15.f;								// Timer starts at 15 seconds
+	float calcCPS;											// Calculates average CPS
 	bool waitingForLeftClick = true;						// Needed for ALTERNATING state
 	srand((int)time(0));									// Needed for RANDOM state
-	Clock gameClock;
+	Clock gameClock;										
 	Time dt = gameClock.restart();
 	float deltaTime = dt.asSeconds();
+	Vector2f circleScale = gameCircle.getScale();			// Retrieves current scale of circle
+	Vector2f circlePosition = gameCircle.getPosition();		// Retrieves circles position assigned above
+	bool isPlayingState = false;							// Controls game logic based on game state machine
 
 	// 7. Game Loop
 	while (gameWindow.isOpen()) {
+		deltaTime = gameClock.restart().asSeconds();		// Resets clock each frame
 		/*
 		* INPUT - Capture keyboard/mouse/window interactions
 		*/
-		optional event = gameWindow.pollEvent();
-		while (event) {
-			if (event->is<Event::Closed>() ||
-				(event->is<Event::KeyPressed>() &&
-					event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Escape)) {
+		while (optional currentEvent = gameWindow.pollEvent()) {
+			if (currentEvent->is<Event::Closed>() ||
+				(currentEvent->is<Event::KeyPressed>() &&
+					currentEvent->getIf<Event::KeyPressed>()->code == Keyboard::Key::Escape)) {
 				gameWindow.close();
 			}
 			// Separate if structures since game state changes based on input vs. window interaction
-			if (event->is<Event::KeyPressed>() &&
-				event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Num1) {
+			if (currentEvent->is<Event::KeyPressed>() &&
+				currentEvent->getIf<Event::KeyPressed>()->code == Keyboard::Key::Num1) {
+				// Switch to playing state - GROWING
 				gameState = State::GROWING;
+				isPlayingState = true;
 			}
-			else if (event->is<Event::KeyPressed>() &&
-				event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Num2) {
+			else if (currentEvent->is<Event::KeyPressed>() &&
+				currentEvent->getIf<Event::KeyPressed>()->code == Keyboard::Key::Num2) {
+				// Switch to playing state - SHRINKING
 				gameState = State::SHRINKING;
+				isPlayingState = true;
 			}
-			else if (event->is<Event::KeyPressed>() &&
-				event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Num3) {
+			else if (currentEvent->is<Event::KeyPressed>() &&
+				currentEvent->getIf<Event::KeyPressed>()->code == Keyboard::Key::Num3) {
+				// Switch to playing state - ALTERNATING
 				gameState = State::ALTERNATING;
+				isPlayingState = true;
 			}
-			else if (event->is<Event::KeyPressed>() &&
-				event->getIf<Event::KeyPressed>()->code == Keyboard::Key::Num4) {
+			else if (currentEvent->is<Event::KeyPressed>() &&
+				currentEvent->getIf<Event::KeyPressed>()->code == Keyboard::Key::Num4) {
+				// Switch to playing state - RANDOM
 				gameState = State::RANDOM;
+				isPlayingState = true;
+			}
+			switch (gameState) {
+			case State::GROWING: 
+				gameCircle.setRadius(45.f);
+				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
+				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
+					if (mouseEvent->button == Mouse::Button::Left) {
+						// Detects left click
+						Vector2f worldPos = gameWindow.mapPixelToCoords(Mouse::getPosition(gameWindow));
+						// Allows for the mouse movements to be detected
+						if (gameCircle.getGlobalBounds().contains(worldPos)) {
+							// Only when the player clicks on the circle
+							gameCircle.setFillColor(Color::Green);
+							circleScale *= 1.02f;						// Increase in size by about 2% exponentially
+							gameCircle.setScale(circleScale);
+							gameCircle.setPosition(circlePosition);
+							cpsValue++;									// Collect each click
+							cpsText.setString("CPS: " + to_string(cpsValue));
+						}
+						else {
+							gameCircle.setFillColor(Color::Red);
+						}
+					}
+				}
+				break;
+			case State::SHRINKING:
+				gameCircle.setRadius(200.f);
+				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
+				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
+					if (mouseEvent->button == Mouse::Button::Left) {
+						// Detects left click
+						Vector2f worldPos = gameWindow.mapPixelToCoords(Mouse::getPosition(gameWindow));
+						// Allows for the mouse movements to be detected
+						if (gameCircle.getGlobalBounds().contains(worldPos)) {
+							// Only when the player clicks on the circle
+							gameCircle.setFillColor(Color::Green);
+							circleScale *= 0.98f;						// Decrease in size by about 2% exponentially
+							gameCircle.setScale(circleScale);
+							gameCircle.setPosition(circlePosition);
+							cpsValue++;									// Collect each click
+							cpsText.setString("CPS: " + to_string(cpsValue));
+						}
+						else {
+							gameCircle.setFillColor(Color::Red);
+						}
+					}
+				}
+				break;
+			case State::ALTERNATING:
+				gameCircle.setRadius(100.f);
+				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
+				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
+					Vector2f worldPos = gameWindow.mapPixelToCoords(Mouse::getPosition(gameWindow));
+					// Strictly accepts left click only
+					if (waitingForLeftClick && mouseEvent->button == Mouse::Button::Left &&
+						mouseEvent->button != Mouse::Button::Right) {
+						// Allows for the mouse movements to be detected
+						if (gameCircle.getGlobalBounds().contains(worldPos)) {
+							// Only when the player clicks on the circle
+							gameCircle.setFillColor(Color::Green);
+							waitingForLeftClick = false;				// Change to accept right click
+							cpsValue++;									// Collect click
+							cpsText.setString("CPS: " + to_string(cpsValue));
+						}
+						else {
+							gameCircle.setFillColor(Color::Red);
+						}
+					}
+					// Strictly accepts right click only
+					if (!waitingForLeftClick && mouseEvent->button == Mouse::Button::Right &&
+						mouseEvent->button != Mouse::Button::Left) {
+						// Allows for the mouse movements to be detected
+						if (gameCircle.getGlobalBounds().contains(worldPos)) {
+							// Only when the player clicks on the circle
+							gameCircle.setFillColor(Color::Cyan);
+							waitingForLeftClick = true;					// Change to accept left click
+							cpsValue++;									// Collect click
+							cpsText.setString("CPS: " + to_string(cpsValue));
+						}
+						else {
+							gameCircle.setFillColor(Color::Red);
+						}
+					}
+				}
+				break;
+			case State::RANDOM:
+				gameCircle.setRadius(100.f);
+				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
+				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
+					if (mouseEvent->button == Mouse::Button::Left) {
+						// Detects left click
+						Vector2f worldPos = gameWindow.mapPixelToCoords(Mouse::getPosition(gameWindow));
+						// Allows for the mouse movements to be detected
+						if (gameCircle.getGlobalBounds().contains(worldPos)) {
+							// Only when the player clicks on the circle
+							int maxXCoord = static_cast<int>(windowSizeX - (gameCircle.getRadius() * 2.f));			// Create a maximum horizontal spawn distance
+							int maxYCoord = static_cast<int>(windowSizeY - (gameCircle.getRadius() * 2.f));			// Create a maximum vertical spawn distance
+							float newXCoord = static_cast<float>(rand() % maxXCoord) + gameCircle.getRadius();		// Randomly assigns a new horizontal position
+							float newYCoord = static_cast<float>(rand() % maxYCoord) + gameCircle.getRadius();		// Randomly assigns a new vertical position
+							gameCircle.setFillColor(Color::Green);
+							gameCircle.setPosition({ newXCoord, newYCoord });			// Sets random position
+							cpsValue++;													// Collect click
+							cpsText.setString("CPS: " + to_string(cpsValue));
+						}
+						else {
+							gameCircle.setFillColor(Color::Red);
+						}
+					}
+				}
+				break;
 			}
 		}
 
@@ -145,33 +277,44 @@ int main() {
 		/*
 		* UPDATE - Game Logic
 		*/
-		switch (gameState) {
-		case State::MENU:
-			break;
-		case State::GROWING:
-			gameCircle.setRadius(45.f);
-			gameCircle.setOrigin({ radius, radius });
-			if (const auto* mouseEvent = event->getIf<Event::MouseButtonPressed>()) {
-				if (mouseEvent->button == Mouse::Button::Left) {
-					// Detects left click
-					Vector2f worldPos = gameWindow.mapPixelToCoords(Mouse::getPosition(gameWindow));
-					// Allows for the mouse movements to be detected
-					if (gameCircle.getGlobalBounds().contains(worldPos)) {
-						// Only when the player clicks on the circle
-						gameCircle.setFillColor(Color::Blue);
-
-					}
-				}
+		if (isPlayingState && timerValue > 0.0f) {
+			timerValue -= deltaTime;
+			timerText.setString("Time: " + to_string(static_cast<int>(timerValue)));
+			if (timerValue <= 0.0f) {
+				isPlayingState = false;								// Game has ended once timer is finished
+				gameState = State::GAME_OVER;
 			}
 		}
-
+		if (!isPlayingState && timerValue <= 0.0f) {
+			calcCPS = static_cast<float>(cpsValue) / 15.0f;			// Calculate average AFTER game is over
+			calcCPSText.setString("Average: " +
+				to_string(calcCPS).substr(0, 4));					// .substr function keeps average set to two decimal places
+			gameClock.restart();
+		}
 
 		/*
 		* RENDER - Clears screen and draws objects
 		*/
-
-
+		gameWindow.clear();
+		if (gameState == State::MENU) {
+			// Draw only menu
+			gameWindow.setView(menuView);
+			gameWindow.draw(titleText);
+			gameWindow.draw(optionsText);
+		}
+		if (isPlayingState) {
+			// Draw appropriate game mode
+			gameWindow.setView(gameView);
+			gameWindow.draw(gameCircle);
+			gameWindow.draw(timerText);
+			gameWindow.draw(cpsText);
+		}
+		if (gameState == State::GAME_OVER) {
+			// Draw end of game stats
+			gameWindow.setView(endView);
+			gameWindow.draw(calcCPSText);
+		}
+		gameWindow.display();
 	}
-
 	return 0;
 }
