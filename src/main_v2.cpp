@@ -31,6 +31,11 @@ int main() {
 	gameCircle.setFillColor(Color::White);					// White = default
 	gameCircle.setPosition({ windowSizeX / 2.f,	
 		windowSizeY / 2.f });								// Sets circle position in center of screen
+	const float RESET_RADIUS = 50.f;
+	const Vector2f RESET_SCALE = { 1.f , 1.f };
+	gameCircle.setRadius(RESET_RADIUS);						// Changes the radius of the circle back when reset
+	gameCircle.setScale(RESET_SCALE);
+	Vector2f debugScale;									// Debugger to see how the scale changes as game state changes
 
 	// 3. Load the font.
 	Font mainFont;
@@ -91,6 +96,18 @@ int main() {
 	calcCPSText.setFillColor(Color::Black);					// Sets color of this text to black
 	calcCPSText.setOutlineColor(Color::White);				// Sets outline color
 	calcCPSText.setOutlineThickness(5.f);					// Sets thickness of outline to 5 pixels thick
+	// 6 - Return to Main Text
+	Text returnToMenuText(mainFont, "Press ENTER to return to menu", 95);
+	FloatRect returnToMenuBounds = returnToMenuText.getLocalBounds();
+	returnToMenuText.setOrigin({
+		returnToMenuBounds.position.x + returnToMenuBounds.size.x / 2.f,
+		returnToMenuBounds.position.y + returnToMenuBounds.size.y / 2.f
+		});
+	returnToMenuText.setPosition({ windowSizeX / 2.f,
+		windowSizeY / 4.f });
+	returnToMenuText.setFillColor(Color::Black);
+	returnToMenuText.setOutlineColor(Color::White);
+	returnToMenuText.setOutlineThickness(2.f);
 
 	// 5. Create State Machine
 	enum class State {
@@ -123,6 +140,7 @@ int main() {
 	Vector2f circleScale = gameCircle.getScale();			// Retrieves current scale of circle
 	Vector2f circlePosition = gameCircle.getPosition();		// Retrieves circles position assigned above
 	bool isPlayingState = false;							// Controls game logic based on game state machine
+	bool resetGame = false;									// Controls the game reset logic
 
 	// 7. Game Loop
 	while (gameWindow.isOpen()) {
@@ -163,6 +181,7 @@ int main() {
 			}
 			switch (gameState) {
 			case State::GROWING: 
+				resetGame = false;
 				gameCircle.setRadius(45.f);
 				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
 				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
@@ -178,6 +197,8 @@ int main() {
 							gameCircle.setPosition(circlePosition);
 							cpsValue++;									// Collect each click
 							cpsText.setString("CPS: " + to_string(cpsValue));
+							debugScale = gameCircle.getScale();
+							cout << "[DEBUG] - Circle starting scale: " << debugScale.x << " & " << debugScale.y << endl;
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
@@ -186,6 +207,7 @@ int main() {
 				}
 				break;
 			case State::SHRINKING:
+				resetGame = false;
 				gameCircle.setRadius(200.f);
 				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
 				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
@@ -201,6 +223,8 @@ int main() {
 							gameCircle.setPosition(circlePosition);
 							cpsValue++;									// Collect each click
 							cpsText.setString("CPS: " + to_string(cpsValue));
+							debugScale = gameCircle.getScale();
+							cout << "[DEBUG] - Circle starting scale: " << debugScale.x << " & " << debugScale.y << endl;
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
@@ -209,6 +233,7 @@ int main() {
 				}
 				break;
 			case State::ALTERNATING:
+				resetGame = false;
 				gameCircle.setRadius(100.f);
 				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
 				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
@@ -223,6 +248,8 @@ int main() {
 							waitingForLeftClick = false;				// Change to accept right click
 							cpsValue++;									// Collect click
 							cpsText.setString("CPS: " + to_string(cpsValue));
+							debugScale = gameCircle.getScale();
+							cout << "[DEBUG] - Circle starting scale: " << debugScale.x << " & " << debugScale.y << endl;
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
@@ -238,6 +265,8 @@ int main() {
 							waitingForLeftClick = true;					// Change to accept left click
 							cpsValue++;									// Collect click
 							cpsText.setString("CPS: " + to_string(cpsValue));
+							debugScale = gameCircle.getScale();
+							cout << "[DEBUG] - Circle starting scale: " << debugScale.x << " & " << debugScale.y << endl;
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
@@ -246,6 +275,7 @@ int main() {
 				}
 				break;
 			case State::RANDOM:
+				resetGame = false;
 				gameCircle.setRadius(100.f);
 				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
 				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
@@ -270,6 +300,13 @@ int main() {
 					}
 				}
 				break;
+			case State::GAME_OVER:
+				if (currentEvent->is<Event::KeyPressed>() &&
+					currentEvent->getIf<Event::KeyPressed>()->code == Keyboard::Key::Enter) {
+					gameState = State::MENU;
+					resetGame = true;
+					gameCircle.setRadius(RESET_RADIUS);						// Sets circle radius back to initial value
+				}
 			}
 		}
 
@@ -290,6 +327,17 @@ int main() {
 			calcCPSText.setString("Average: " +
 				to_string(calcCPS).substr(0, 4));					// .substr function keeps average set to two decimal places
 			gameClock.restart();
+		}
+		if (resetGame) {
+			cpsValue = 0;
+			timerValue = 15.0f;
+			gameClock.restart();
+			gameCircle.setFillColor(Color::White);					// White = default
+			gameCircle.setPosition({ windowSizeX / 2.f,
+				windowSizeY / 2.f });								// Sets circle position in center of screen
+			circleScale = RESET_SCALE;
+			debugScale = gameCircle.getScale();
+			cout << "[DEBUG] - Before game reset : " << debugScale.x << " & " << debugScale.y << endl;
 		}
 
 		/*
@@ -313,6 +361,7 @@ int main() {
 			// Draw end of game stats
 			gameWindow.setView(endView);
 			gameWindow.draw(calcCPSText);
+			gameWindow.draw(returnToMenuText);
 		}
 		gameWindow.display();
 	}
