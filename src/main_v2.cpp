@@ -31,6 +31,10 @@ int main() {
 	gameCircle.setFillColor(Color::White);					// White = default
 	gameCircle.setPosition({ windowSizeX / 2.f,	
 		windowSizeY / 2.f });								// Sets circle position in center of screen
+	float growingRadius = 45.f;								// Radius for growing mode
+	float shrinkingRadius = 175.f;							// Radius for shrinking mode
+	float alternatingRadius = 100.f;						// Radius for alternating mode
+	float randomRadius = 95.f;								// Radius for random mode
 	const float RESET_RADIUS = 50.f;
 	const Vector2f RESET_SCALE = { 1.f , 1.f };
 	gameCircle.setRadius(RESET_RADIUS);						// Changes the radius of the circle back when reset
@@ -76,7 +80,7 @@ int main() {
 	timerText.setPosition({ windowSizeX / 3.f,
 		windowSizeY / 10.f });								// Places timer 1/3rd horizontal distance from left, 1/10th from top
 	// 4 - CPS Text
-	Text cpsText(mainFont, "CPS: ", 25);
+	Text cpsText(mainFont, "CPS: 0", 25);
 	FloatRect cpsBounds = cpsText.getLocalBounds();
 	cpsText.setOrigin({
 		cpsBounds.position.x + cpsBounds.size.x / 2.f,
@@ -108,6 +112,32 @@ int main() {
 	returnToMenuText.setFillColor(Color::Black);
 	returnToMenuText.setOutlineColor(Color::White);
 	returnToMenuText.setOutlineThickness(2.f);
+	// 7 - Alternative Statistics Text
+	Text randomMisclickText(mainFont, "Misclicks: ", 65);
+	FloatRect randomMisclickBounds = randomMisclickText.getLocalBounds();
+	randomMisclickText.setOrigin({
+		randomMisclickBounds.position.x + randomMisclickBounds.size.x / 2.f,
+		randomMisclickBounds.position.y + randomMisclickBounds.size.y / 2.f
+		});
+	randomMisclickText.setPosition({ windowSizeX / 2.f,
+		windowSizeY / 4.f * 3.f });							// Places vertical position 3/4s from the top
+	// 8 - More Alternative Stats Text
+	Text doubleLeftClickText(mainFont, "Double Left-Clicked: ", 40);
+	FloatRect doubleLeftClickBounds = doubleLeftClickText.getLocalBounds();
+	doubleLeftClickText.setOrigin({
+		doubleLeftClickBounds.position.x + doubleLeftClickBounds.size.x / 2.f,
+		doubleLeftClickBounds.position.y + doubleLeftClickBounds.size.y / 2.f,
+		});
+	doubleLeftClickText.setPosition({ windowSizeX / 3.f,
+		windowSizeY / 4.f * 3.f });							// Places horizontal 1/3 and vertical 3/4s
+	Text doubleRightClickText(mainFont, "Double Right-Clicked: ", 40);
+	FloatRect doubleRightClickBounds = doubleRightClickText.getLocalBounds();
+	doubleRightClickText.setOrigin({
+		doubleRightClickBounds.position.x + doubleRightClickBounds.size.x / 2.f,
+		doubleRightClickBounds.position.y + doubleRightClickBounds.size.y / 2.f,
+		});
+	doubleRightClickText.setPosition({ windowSizeX / 3.f * 2.f,
+		windowSizeY / 4.f * 3.f });							// Places horizontal 2/3 and vertical 3/4s
 
 	// 5. Create State Machine
 	enum class State {
@@ -141,6 +171,12 @@ int main() {
 	Vector2f circlePosition = gameCircle.getPosition();		// Retrieves circles position assigned above
 	bool isPlayingState = false;							// Controls game logic based on game state machine
 	bool resetGame = false;									// Controls the game reset logic
+	int misclickCount = 0;									// Used certain game modes to track another statistic
+	bool displayMisclick = false;							// Needed for controlling whether to display misclicks
+	bool isDoubleClicked = true;							// Needed for checking Alternating mode
+	int doubleLeftClicked = 0;								// Used for counting double left clicks
+	int doubleRightClicked = 0;								// Used for counting double right clicks
+	bool displayDoubleClicks = false;						// Needed for controlling whether to display double clicks
 
 	// 7. Game Loop
 	while (gameWindow.isOpen()) {
@@ -182,7 +218,9 @@ int main() {
 			switch (gameState) {
 			case State::GROWING: 
 				resetGame = false;
-				gameCircle.setRadius(45.f);
+				displayMisclick = false;
+				displayDoubleClicks = false;
+				gameCircle.setRadius(growingRadius);
 				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
 				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
 					if (mouseEvent->button == Mouse::Button::Left) {
@@ -198,7 +236,7 @@ int main() {
 							cpsValue++;									// Collect each click
 							cpsText.setString("CPS: " + to_string(cpsValue));
 							debugScale = gameCircle.getScale();
-							cout << "[DEBUG] - Circle starting scale: " << debugScale.x << " & " << debugScale.y << endl;
+							cout << "[DEBUG] - Circle current scale: " << debugScale.x << " & " << debugScale.y << endl;
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
@@ -208,7 +246,9 @@ int main() {
 				break;
 			case State::SHRINKING:
 				resetGame = false;
-				gameCircle.setRadius(200.f);
+				displayMisclick = false;
+				displayDoubleClicks = false;
+				gameCircle.setRadius(shrinkingRadius);
 				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
 				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
 					if (mouseEvent->button == Mouse::Button::Left) {
@@ -224,7 +264,7 @@ int main() {
 							cpsValue++;									// Collect each click
 							cpsText.setString("CPS: " + to_string(cpsValue));
 							debugScale = gameCircle.getScale();
-							cout << "[DEBUG] - Circle starting scale: " << debugScale.x << " & " << debugScale.y << endl;
+							cout << "[DEBUG] - Circle current scale: " << debugScale.x << " & " << debugScale.y << endl;
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
@@ -234,7 +274,9 @@ int main() {
 				break;
 			case State::ALTERNATING:
 				resetGame = false;
-				gameCircle.setRadius(100.f);
+				displayMisclick = false;
+				displayDoubleClicks = true;
+				gameCircle.setRadius(alternatingRadius);
 				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
 				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
 					Vector2f worldPos = gameWindow.mapPixelToCoords(Mouse::getPosition(gameWindow));
@@ -249,7 +291,13 @@ int main() {
 							cpsValue++;									// Collect click
 							cpsText.setString("CPS: " + to_string(cpsValue));
 							debugScale = gameCircle.getScale();
-							cout << "[DEBUG] - Circle starting scale: " << debugScale.x << " & " << debugScale.y << endl;
+							cout << "[DEBUG] - Circle current scale: " << debugScale.x << " & " << debugScale.y << endl;
+							isDoubleClicked = true;
+							if (isDoubleClicked) {
+								// Adds a count to when the left click has already been registered
+								doubleLeftClicked++;
+								isDoubleClicked = !isDoubleClicked;
+							}
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
@@ -266,7 +314,11 @@ int main() {
 							cpsValue++;									// Collect click
 							cpsText.setString("CPS: " + to_string(cpsValue));
 							debugScale = gameCircle.getScale();
-							cout << "[DEBUG] - Circle starting scale: " << debugScale.x << " & " << debugScale.y << endl;
+							cout << "[DEBUG] - Circle current scale: " << debugScale.x << " & " << debugScale.y << endl;
+							if (isDoubleClicked) {
+								// Adds a count to when the right click has already been registered
+								doubleRightClicked++;
+							}
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
@@ -276,7 +328,8 @@ int main() {
 				break;
 			case State::RANDOM:
 				resetGame = false;
-				gameCircle.setRadius(100.f);
+				displayDoubleClicks = false;
+				gameCircle.setRadius(randomRadius);
 				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
 				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
 					if (mouseEvent->button == Mouse::Button::Left) {
@@ -296,6 +349,8 @@ int main() {
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
+							misclickCount++;
+							displayMisclick = true;
 						}
 					}
 				}
@@ -316,7 +371,8 @@ int main() {
 		*/
 		if (isPlayingState && timerValue > 0.0f) {
 			timerValue -= deltaTime;
-			timerText.setString("Time: " + to_string(static_cast<int>(timerValue)));
+			timerText.setString("Time: " 
+				+ to_string(static_cast<int>(timerValue)));
 			if (timerValue <= 0.0f) {
 				isPlayingState = false;								// Game has ended once timer is finished
 				gameState = State::GAME_OVER;
@@ -326,18 +382,31 @@ int main() {
 			calcCPS = static_cast<float>(cpsValue) / 15.0f;			// Calculate average AFTER game is over
 			calcCPSText.setString("Average: " +
 				to_string(calcCPS).substr(0, 4));					// .substr function keeps average set to two decimal places
+			
+			randomMisclickText.setString("Misclicks: " 
+				+ to_string(misclickCount));
 			gameClock.restart();
+			doubleLeftClickText.setString("Double Left-Clicked: "
+				+ to_string(doubleLeftClicked));
+			doubleRightClickText.setString("Double Right-Clicked: "
+				+ to_string(doubleRightClicked));
 		}
 		if (resetGame) {
 			cpsValue = 0;
 			timerValue = 15.0f;
+			misclickCount = 0;
 			gameClock.restart();
 			gameCircle.setFillColor(Color::White);					// White = default
 			gameCircle.setPosition({ windowSizeX / 2.f,
 				windowSizeY / 2.f });								// Sets circle position in center of screen
-			circleScale = RESET_SCALE;
+			circleScale = RESET_SCALE;								// Allows for the scale to go back to normal
+			gameCircle.setScale(RESET_SCALE);						// Resets size of circle in subsequent played games
 			debugScale = gameCircle.getScale();
-			cout << "[DEBUG] - Before game reset : " << debugScale.x << " & " << debugScale.y << endl;
+			cout << "[DEBUG] - Before game reset : " 
+				<< debugScale.x << " & " << debugScale.y << endl;
+			cpsText.setString("CPS: 0");
+			doubleLeftClicked = 0;
+			doubleRightClicked = 0;
 		}
 
 		/*
@@ -362,6 +431,13 @@ int main() {
 			gameWindow.setView(endView);
 			gameWindow.draw(calcCPSText);
 			gameWindow.draw(returnToMenuText);
+			if (displayMisclick) {
+				gameWindow.draw(randomMisclickText);
+			}
+			if (displayDoubleClicks) {
+				gameWindow.draw(doubleLeftClickText);
+				gameWindow.draw(doubleRightClickText);
+			}
 		}
 		gameWindow.display();
 	}
