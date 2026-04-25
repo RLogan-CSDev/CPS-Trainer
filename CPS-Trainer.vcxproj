@@ -160,6 +160,12 @@
   <ItemGroup>
     <Text Include="docs\IDE_Setup.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\graphics\background.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="assets\audio\Infinite Expanse.wav" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

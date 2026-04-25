@@ -47,6 +47,22 @@ int main() {
 		// If the font does not load from the files, an error message prints to console.
 		cout << "[DEBUG] - Font failed to load.\n";
 	}
+	// 3. Load the background.
+	Texture backgroundTexture;
+	if (!backgroundTexture.loadFromFile("assets/graphics/background.jpg")) {
+		// If the graphic does not load from the files, an error message prints to console.
+		cout << "[DEBUG] - Background failed to load.\n";
+	}
+	Sprite backgroundSprite(backgroundTexture);
+	// 3. Load the background music.
+	Music backgroundMusic;
+	if (!backgroundMusic.openFromFile("assets/audio/Infinite Expanse.wav")); {
+		// If the background music does not load from the files, an error message prints to console.
+		cout << "[DEBUG] - Music failed to load.\n";
+	}
+	backgroundMusic.setLooping(true);
+	backgroundMusic.setVolume(50.f);
+	backgroundMusic.play();
 
 	// 4. Create Text objects.
 	// 1 - Title Text
@@ -89,7 +105,7 @@ int main() {
 	cpsText.setPosition({ windowSizeX / 3.f * 2.f,
 		windowSizeY / 10.f });								// Places CPS 2/3rds horizontally distance from left, 1/10th from top
 	// 5 - Average Calculation Text
-	Text calcCPSText(mainFont, "Average: ", 75);
+	Text calcCPSText(mainFont, "Average CPS: ", 75);
 	FloatRect calcCPSBounds = calcCPSText.getLocalBounds();
 	calcCPSText.setOrigin({
 		calcCPSBounds.position.x + calcCPSBounds.size.x / 2.f,
@@ -112,15 +128,23 @@ int main() {
 	returnToMenuText.setFillColor(Color::Black);
 	returnToMenuText.setOutlineColor(Color::White);
 	returnToMenuText.setOutlineThickness(2.f);
-	// 7 - Alternative Statistics Text
+	// 7 - Alternative Random Statistics Text
 	Text randomMisclickText(mainFont, "Misclicks: ", 65);
 	FloatRect randomMisclickBounds = randomMisclickText.getLocalBounds();
 	randomMisclickText.setOrigin({
 		randomMisclickBounds.position.x + randomMisclickBounds.size.x / 2.f,
 		randomMisclickBounds.position.y + randomMisclickBounds.size.y / 2.f
 		});
-	randomMisclickText.setPosition({ windowSizeX / 2.f,
-		windowSizeY / 4.f * 3.f });							// Places vertical position 3/4s from the top
+	randomMisclickText.setPosition({ windowSizeX / 3.f,				// Places horizontal position 1/3 from left
+		windowSizeY / 4.f * 3.f });									// Places vertical position 3/4s from the top
+	Text randomAccuracyText(mainFont, "Accuracy: ", 65);
+	FloatRect randomAccuracyBounds = randomAccuracyText.getLocalBounds();
+	randomAccuracyText.setOrigin({
+		randomAccuracyBounds.position.x + randomAccuracyBounds.size.x / 2.f,
+		randomAccuracyBounds.position.y + randomAccuracyBounds.size.y / 2.f
+		});
+	randomAccuracyText.setPosition({ windowSizeX / 3.f * 2.f,		// Places horizontal position 2/3s from left
+		windowSizeY / 4.f * 3.f });									// Places vertical position 3/4s from top
 	// 8 - More Alternative Stats Text
 	Text doubleLeftClickText(mainFont, "Double Left-Clicked: ", 40);
 	FloatRect doubleLeftClickBounds = doubleLeftClickText.getLocalBounds();
@@ -172,10 +196,15 @@ int main() {
 	bool isPlayingState = false;							// Controls game logic based on game state machine
 	bool resetGame = false;									// Controls the game reset logic
 	int misclickCount = 0;									// Used certain game modes to track another statistic
+	float randomAccuracyCount = 0.f;						// Calculates accuracy based on total clicks
+	float totalClicks = 0.f;								// Tracks total clicks needed for math later
 	bool displayMisclick = false;							// Needed for controlling whether to display misclicks
 	bool isDoubleClicked = true;							// Needed for checking Alternating mode
 	int doubleLeftClicked = 0;								// Used for counting double left clicks
+	int leftClickCount = 0;
+	bool alreadyLeftClicked;
 	int doubleRightClicked = 0;								// Used for counting double right clicks
+	int rightClickCount = 0;
 	bool displayDoubleClicks = false;						// Needed for controlling whether to display double clicks
 
 	// 7. Game Loop
@@ -280,6 +309,28 @@ int main() {
 				gameCircle.setOrigin({ gameCircle.getRadius(), gameCircle.getRadius() });
 				if (const auto* mouseEvent = currentEvent->getIf<Event::MouseButtonPressed>()) {
 					Vector2f worldPos = gameWindow.mapPixelToCoords(Mouse::getPosition(gameWindow));
+					//if (mouseEvent->button == Mouse::Button::Left) {
+					//	doubleLeftClicked++;
+					//	
+					//	leftClickCount++;						// Registers a left click
+					//	rightClickCount = 0;					// Ensures right clicks are not recorded, yet
+					//	//if (leftClickCount >= 2) {
+					//	//	// Once 1 click has already been registered...
+					//	//	doubleLeftClicked++;				// Increment double left clicks by one
+					//	//	leftClickCount = 0;					// Reset left click count to 0 
+					//	//}
+					//}
+					//else if (mouseEvent->button == Mouse::Button::Right) {
+					//	doubleRightClicked++;
+					//	
+					//	rightClickCount++;						// Registers a right click
+					//	leftClickCount = 0;						// Ensures left clicks are not recorded, yet
+					//	//if (rightClickCount >= 2) {
+					//	//	// Once 1 click has already been registered...
+					//	//	doubleRightClicked++;				// Increment double right clicks by one
+					//	//	rightClickCount = 0;				// Reset right click count to 0
+					//	//}
+					//}
 					// Strictly accepts left click only
 					if (waitingForLeftClick && mouseEvent->button == Mouse::Button::Left &&
 						mouseEvent->button != Mouse::Button::Right) {
@@ -292,11 +343,17 @@ int main() {
 							cpsText.setString("CPS: " + to_string(cpsValue));
 							debugScale = gameCircle.getScale();
 							cout << "[DEBUG] - Circle current scale: " << debugScale.x << " & " << debugScale.y << endl;
-							isDoubleClicked = true;
-							if (isDoubleClicked) {
-								// Adds a count to when the left click has already been registered
-								doubleLeftClicked++;
-								isDoubleClicked = !isDoubleClicked;
+							if (waitingForLeftClick == false && gameCircle.getFillColor() == Color::Green &&
+								gameCircle.getGlobalBounds().contains(worldPos)) {
+								//leftClickCount++;
+								alreadyLeftClicked = true;
+								if (alreadyLeftClicked) {
+									doubleLeftClicked++;
+									rightClickCount = 0;
+								}
+							}
+							else {
+								alreadyLeftClicked = false;
 							}
 						}
 						else {
@@ -315,10 +372,6 @@ int main() {
 							cpsText.setString("CPS: " + to_string(cpsValue));
 							debugScale = gameCircle.getScale();
 							cout << "[DEBUG] - Circle current scale: " << debugScale.x << " & " << debugScale.y << endl;
-							if (isDoubleClicked) {
-								// Adds a count to when the right click has already been registered
-								doubleRightClicked++;
-							}
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
@@ -346,11 +399,13 @@ int main() {
 							gameCircle.setPosition({ newXCoord, newYCoord });			// Sets random position
 							cpsValue++;													// Collect click
 							cpsText.setString("CPS: " + to_string(cpsValue));
+							totalClicks++;
 						}
 						else {
 							gameCircle.setFillColor(Color::Red);
 							misclickCount++;
 							displayMisclick = true;
+							totalClicks++;
 						}
 					}
 				}
@@ -379,22 +434,28 @@ int main() {
 			}
 		}
 		if (!isPlayingState && timerValue <= 0.0f) {
-			calcCPS = static_cast<float>(cpsValue) / 15.0f;			// Calculate average AFTER game is over
-			calcCPSText.setString("Average: " +
-				to_string(calcCPS).substr(0, 4));					// .substr function keeps average set to two decimal places
-			
+			gameClock.restart();
+			calcCPS = static_cast<float>(cpsValue) / 15.0f;				// Calculate average AFTER game is over
+			calcCPSText.setString("Average CPS: " +
+				to_string(calcCPS).substr(0, 4));						// .substr function keeps average set to two decimal places
+
 			randomMisclickText.setString("Misclicks: " 
 				+ to_string(misclickCount));
-			gameClock.restart();
+			randomAccuracyCount = 
+				(totalClicks - static_cast<float>(misclickCount)) / totalClicks * 100.f;
+			randomAccuracyText.setString("Accuracy: " 
+				+ to_string(randomAccuracyCount).substr(0,4) + "%");	// Calculates how many clicks registered vs. those that did not register
 			doubleLeftClickText.setString("Double Left-Clicked: "
-				+ to_string(doubleLeftClicked));
+				+ to_string(doubleLeftClicked));						// Records double left clicks as total left clicks
 			doubleRightClickText.setString("Double Right-Clicked: "
-				+ to_string(doubleRightClicked));
+				+ to_string(doubleRightClicked));						// Records double right clicks as total right clicks
 		}
 		if (resetGame) {
 			cpsValue = 0;
 			timerValue = 15.0f;
 			misclickCount = 0;
+			randomAccuracyCount = 0.f;
+			totalClicks = 0.f;
 			gameClock.restart();
 			gameCircle.setFillColor(Color::White);					// White = default
 			gameCircle.setPosition({ windowSizeX / 2.f,
@@ -407,12 +468,14 @@ int main() {
 			cpsText.setString("CPS: 0");
 			doubleLeftClicked = 0;
 			doubleRightClicked = 0;
+			waitingForLeftClick = true;
 		}
 
 		/*
 		* RENDER - Clears screen and draws objects
 		*/
 		gameWindow.clear();
+		gameWindow.draw(backgroundSprite);
 		if (gameState == State::MENU) {
 			// Draw only menu
 			gameWindow.setView(menuView);
@@ -433,6 +496,7 @@ int main() {
 			gameWindow.draw(returnToMenuText);
 			if (displayMisclick) {
 				gameWindow.draw(randomMisclickText);
+				gameWindow.draw(randomAccuracyText);
 			}
 			if (displayDoubleClicks) {
 				gameWindow.draw(doubleLeftClickText);
