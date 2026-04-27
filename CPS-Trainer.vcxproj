@@ -146,6 +146,7 @@
     <ClCompile Include="src\GrowingState.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\main_v2.cpp" />
+    <ClCompile Include="src\main_v3.cpp" />
     <ClCompile Include="src\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
