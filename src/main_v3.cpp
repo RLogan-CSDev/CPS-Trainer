@@ -22,11 +22,9 @@ using namespace sf;
 void initializeTextObjects(vector<Text>& textObj, float winX, float winY);
 void growingCircleMode(RenderWindow& win, CircleShape& circle, Text& text, Vector2f& scale, Vector2f& pos, float radius, int& cps);
 void shrinkingCircleMode(RenderWindow& win, CircleShape& circle, Text& text, Vector2f& scale, Vector2f& pos, float radius, int& cps);
-void alternatingCircleMode(RenderWindow& win, CircleShape& circle, Text& text, float radius, int& cps, bool left);
+void alternatingCircleMode(RenderWindow& win, CircleShape& circle, Text& text, float radius, int& cps, bool& left);
 void randomCircleMode(RenderWindow& win, CircleShape& circle, Text& text, float radius, int& cps, int& total, int& miss);
-Font openFont();
-Sprite openBackground();
-Music openMusic();
+void loadResources(Font& font, Texture& background, Music& music);
 void resetGame(int& cps, int& total, int& miss, float& timer, Clock& clock, bool& left, CircleShape& circle, float winX, float winY, Vector2f& scale, Vector2f& pos);
 
 int main() {
@@ -64,7 +62,7 @@ int main() {
 	float accuracy = 0.f;
 	bool displayMisclicks = false;
 	bool waitingForLeftClick = true;
-	bool isPlayingState;
+	bool isPlayingState = true;
 	bool reset = false;
 	Clock gameClock;
 	float deltaTime;
@@ -74,8 +72,13 @@ int main() {
 		Style::Close | Style::Resize | Style::Titlebar);
 	float windowSizeX = gameWindow.getSize().x;
 	float windowSizeY = gameWindow.getSize().y;
-
-	Font mainFont = openFont();
+	
+	Font mainFont;
+	Texture background;
+	Music backgroundMusic;
+	loadResources(mainFont, background, backgroundMusic);
+	Sprite backgroundSprite(background);
+	backgroundMusic.play();
 
 	// Creating Text objects
 	Text titleText(mainFont, "CPS Trainer", 55);
@@ -97,9 +100,6 @@ int main() {
 		randomMisclickText,		// Index 6
 		randomAccuracyText		// Index 7
 	};
-	for (auto& text : textObjects) {
-		textObjects.push_back(text);
-	}
 	initializeTextObjects(textObjects, windowSizeX, windowSizeY);
 
 	
@@ -207,8 +207,7 @@ int main() {
 		* RENDER
 		*/
 		gameWindow.clear();
-		gameWindow.draw(openBackground());
-		openMusic().play();
+		gameWindow.draw(backgroundSprite);
 		if (gameState == State::MENU) {
 			gameWindow.draw(textObjects[0]);
 			gameWindow.draw(textObjects[1]);
@@ -304,7 +303,7 @@ void shrinkingCircleMode(RenderWindow& win, CircleShape& circle, Text& text, Vec
 	}
 }
 
-void alternatingCircleMode(RenderWindow& win, CircleShape& circle, Text& text, float radius, int& cps, bool left) {
+void alternatingCircleMode(RenderWindow& win, CircleShape& circle, Text& text, float radius, int& cps, bool& left) {
 	circle.setRadius(radius);
 	circle.setOrigin({ radius, radius });
 	Vector2f worldPos = win.mapPixelToCoords(Mouse::getPosition(win));
@@ -356,36 +355,19 @@ void randomCircleMode(RenderWindow& win, CircleShape& circle, Text& text, float 
 	}
 }
 
-Font openFont() {
-	Font font;
+void loadResources(Font& font, Texture& background, Music& music) {
 	if (!font.openFromFile("assets/fonts/Cavalier.ttf")) {
 		cout << "[DEBUG] - Font failed to load." << endl;
 	}
-	else {
-		return font;
-	}
-}
-
-Sprite openBackground() {
-	Texture background;
 	if (!background.loadFromFile("assets/graphics/background.jpg")) {
 		cout << "[DEBUG] - Background failed to load." << endl;
 	}
-	else {
-		Sprite backgroundSprite(background);
-		return backgroundSprite;
-	}
-}
-
-Music openMusic() {
-	Music backgroundMusic;
-	if (!backgroundMusic.openFromFile("assets/audio/Infinite Expanse.wave")) {
+	if (!music.openFromFile("assets/audio/Infinite Expanse.wav")) {
 		cout << "[DEBUG] - Music failed to load." << endl;
 	}
 	else {
-		backgroundMusic.setLooping(true);
-		backgroundMusic.setVolume(50.f);
-		return backgroundMusic;
+		music.setLooping(true);
+		music.setVolume(50.f);
 	}
 }
 
