@@ -152,6 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\graphics\background.jpg" />
+    <Image Include="docs\CPSTrainerGamePlayClip.gif" />
   </ItemGroup>
   <ItemGroup>
     <Media Include="assets\audio\Infinite Expanse.wav" />

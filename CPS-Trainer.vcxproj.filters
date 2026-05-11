@@ -32,6 +32,9 @@
     <Image Include="assets\graphics\background.jpg">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="docs\CPSTrainerGamePlayClip.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <Media Include="assets\audio\Infinite Expanse.wav">

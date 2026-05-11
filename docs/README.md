@@ -1,6 +1,8 @@
 # CPS (Clicks-Per-Second) Trainer Game
 **Developer**: Robert Logan
 
+![CPS Trainer Demo](docs/CPSTrainerGamePlayClip.gif)
+
 ## Project Overview
 This project serves as a technical demonstration of game loops and object-oriented design using C++.
 There are a few goals that this project covers:
