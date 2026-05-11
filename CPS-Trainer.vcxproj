@@ -141,22 +141,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Engine.cpp" />
-    <ClCompile Include="src\GameState.cpp" />
-    <ClCompile Include="src\GrowingState.cpp" />
+    <ClCompile Include="src\prototype.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\main_v2.cpp" />
-    <ClCompile Include="src\main_v3.cpp" />
-    <ClCompile Include="src\UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="docs\README.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="include\Engine.h" />
-    <ClInclude Include="include\GameState.h" />
-    <ClInclude Include="include\GrowingState.h" />
-    <ClInclude Include="include\UIManager.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="docs\IDE_Setup.txt" />
